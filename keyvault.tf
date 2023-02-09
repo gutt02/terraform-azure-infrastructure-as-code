@@ -11,7 +11,7 @@ resource "azurerm_key_vault" "this" {
   network_acls {
     default_action = "Deny"
     bypass         = "AzureServices"
-    ip_rules       = [var.client_ip.cidr,var.agent_ip]
+    ip_rules       = [var.client_ip.cidr, var.agent_ip]
   }
 }
 
