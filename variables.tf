@@ -5,6 +5,13 @@ locals {
 }
 
 # curl ipinfo.io/ip
+variable "agent_ip" {
+  type = string
+
+  description = "IP of the deployment agent."
+}
+
+# curl ipinfo.io/ip
 variable "client_ip" {
   type = object({
     name             = string
