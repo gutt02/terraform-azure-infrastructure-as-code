@@ -40,7 +40,7 @@ jobs:
     - name: Add keyvault network rule
       run: |
         export TF_VAR_agent_ip=$(curl -s ipinfo.io/ip)
-        az login --service-principal --username ${{ secrets.CLIENT_ID }} --password ${{ secrets.CLIENT_SECRET }} --tenant-id ${{ secrets.TENANT_ID }}
+        az login --service-principal --username ${{ secrets.CLIENT_ID }} --password ${{ secrets.CLIENT_SECRET }} --tenant ${{ secrets.TENANT_ID }}
         az account set --subscription ${{ secrets.SUBSCRIPTION_ID }}
         az keyvault network-rule add --name azc-iac-vse-kv --ip-address ${TF_VAR_agent_ip}
         az logout
@@ -86,7 +86,7 @@ jobs:
     - name: Remove keyvault network rule
       run: |
         export TF_VAR_agent_ip=$(curl -s ipinfo.io/ip)
-        az login --service-principal --username ${{ secrets.CLIENT_ID }} --password ${{ secrets.CLIENT_SECRET }} --tenant-id ${{ secrets.TENANT_ID }}
+        az login --service-principal --username ${{ secrets.CLIENT_ID }} --password ${{ secrets.CLIENT_SECRET }} --tenant ${{ secrets.TENANT_ID }}
         az account set --subscription ${{ secrets.SUBSCRIPTION_ID }}
         az keyvault network-rule add --name azc-iac-vse-kv --ip-address ${TF_VAR_agent_ip}
         az logout
