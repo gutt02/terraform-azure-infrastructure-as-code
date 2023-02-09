@@ -52,7 +52,7 @@ jobs:
 
     # Generates an execution plan for Terraform
     - name: Terraform Plan
-      run: terraform plan -input=false -out=${{ env.plan_file }}
+      run: terraform plan -input=false -var=location=${{ github.event.inputs.location }} -out=${{ env.plan_file }}
       env:
         ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
         ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
