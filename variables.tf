@@ -71,6 +71,13 @@ variable "tags" {
   description = "Default tags for resources, only applied to resource groups"
 }
 
+variable "user_object_id" {
+  type      = string
+  sensitive = true
+
+  description = "User object id, who needs access to the Key Vault."
+}
+
 variable "virtual_network" {
   type = object({
     address_space = string
@@ -99,12 +106,6 @@ variable "windows_virtual_machine_admin_username" {
   type        = string
   sensitive   = true
   description = "Windows Virtual Machine Admin User."
-}
-
-variable "windows_virtual_machine_admin_password" {
-  type        = string
-  sensitive   = true
-  description = "Windows Virtual Machine Admin Password."
 }
 
 variable "windows_virtual_machine" {

@@ -30,10 +30,11 @@ resource "azurerm_windows_virtual_machine" "this" {
 
   size           = var.windows_virtual_machine.size
   admin_username = var.windows_virtual_machine_admin_username
-  admin_password = var.windows_virtual_machine_admin_password
+  # admin_password = var.windows_virtual_machine_admin_password
+  admin_password = random_password.this.result
 
   network_interface_ids = [
-    azurerm_network_interface.this.id,
+    azurerm_network_interface.this.id
   ]
 
   os_disk {
@@ -47,6 +48,12 @@ resource "azurerm_windows_virtual_machine" "this" {
     offer     = var.windows_virtual_machine.source_image_reference.offer
     sku       = var.windows_virtual_machine.source_image_reference.sku
     version   = var.windows_virtual_machine.source_image_reference.version
+  }
+
+  lifecycle {
+    ignore_changes = [
+      admin_password
+    ]
   }
 }
 
