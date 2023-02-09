@@ -52,7 +52,9 @@ jobs:
 
     # Generates an execution plan for Terraform
     - name: Terraform Plan Destroy
-      run: terraform plan -destroy -input=false -var=location=${{ github.event.inputs.location }} -out=${{ env.plan_file }}
+      run: |
+        export TF_VAR_agent_ip=$(curl -s ipinfo.io/ip)
+        terraform plan -destroy -input=false -var=location=${{ github.event.inputs.location }} -out=${{ env.plan_file }}
       env:
         ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
         ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
