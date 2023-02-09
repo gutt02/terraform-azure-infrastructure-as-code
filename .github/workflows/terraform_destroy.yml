@@ -62,10 +62,10 @@ jobs:
         TF_VAR_windows_virtual_machine_admin_username: ${{ secrets.WINDOWS_VIRTUAL_MACHINE_ADMIN_USERNAME }}
         TF_VAR_windows_virtual_machine_admin_password: ${{ secrets.WINDOWS_VIRTUAL_MACHINE_ADMIN_PASSWORD }}
 
-    # - name: Terraform Apply Destroy
-    #   run: terraform apply -input=false ${{ env.plan_file }}
-    #   env:
-    #     ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
-    #     ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
-    #     ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
-    #     ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
+    - name: Terraform Apply Destroy
+      run: terraform apply -input=false ${{ env.plan_file }}
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+        ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
