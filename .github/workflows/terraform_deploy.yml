@@ -56,7 +56,7 @@ jobs:
       continue-on-error: true
 
     # Disable soft delete of Recovery Service Vault
-    - name: Add keyvault network rule, disable softe delete of Recover Service Vault
+    - name: Disable softe delete of Recover Service Vault
       run: |
         az backup vault backup-properties set --soft-delete-feature-state Disable --name azc-iac-vse-rsv
       continue-on-error: true
