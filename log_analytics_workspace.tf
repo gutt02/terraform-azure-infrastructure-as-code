@@ -62,6 +62,12 @@ resource "azurerm_monitor_diagnostic_setting" "this" {
       enabled = false
     }
   }
+
+  lifecycle {
+    ignore_changes = [
+      log_analytics_destination_type
+    ]
+  }
 }
 
 # https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/recovery_services_vault
