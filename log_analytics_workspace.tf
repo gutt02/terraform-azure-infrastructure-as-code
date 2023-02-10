@@ -36,7 +36,7 @@ data "azurerm_monitor_diagnostic_categories" "this" {
 
 # https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting
 resource "azurerm_monitor_diagnostic_setting" "this" {
-  name                       = "Patching"
+  name                       = "Update"
   target_resource_id         = azurerm_automation_account.this.id
   log_analytics_workspace_id = azurerm_log_analytics_workspace.this.id
 

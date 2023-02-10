@@ -72,17 +72,25 @@ resource "azurerm_virtual_machine_extension" "this" {
   type_handler_version       = "1.0"
   auto_upgrade_minor_version = true
 
-  settings = <<SETTINGS
-    {
-        "workspaceId": "${azurerm_log_analytics_workspace.this.workspace_id}"
-    }
-SETTINGS
+  settings = jsonencode({
+    "workspaceId" = "${azurerm_log_analytics_workspace.this.workspace_id}"
+  })
 
-  protected_settings = <<PROTECTED_SETTINGS
-  {
-    "workspaceKey": "${azurerm_log_analytics_workspace.this.primary_shared_key}"
-  }
-PROTECTED_SETTINGS
+  protected_settings = jsonencode({
+    "workspaceKey" = "${azurerm_log_analytics_workspace.this.primary_shared_key}"
+  })
+
+  #   settings = <<SETTINGS
+  #     {
+  #         "workspaceId": "${azurerm_log_analytics_workspace.this.workspace_id}"
+  #     }
+  # SETTINGS
+
+  #   protected_settings = <<PROTECTED_SETTINGS
+  #   {
+  #     "workspaceKey": "${azurerm_log_analytics_workspace.this.primary_shared_key}"
+  #   }
+  # PROTECTED_SETTINGS
 }
 
 # https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/dev_test_global_vm_shutdown_schedule
