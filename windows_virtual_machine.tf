@@ -80,17 +80,9 @@ resource "azurerm_virtual_machine_extension" "this" {
     "workspaceKey" = "${azurerm_log_analytics_workspace.this.primary_shared_key}"
   })
 
-  #   settings = <<SETTINGS
-  #     {
-  #         "workspaceId": "${azurerm_log_analytics_workspace.this.workspace_id}"
-  #     }
-  # SETTINGS
-
-  #   protected_settings = <<PROTECTED_SETTINGS
-  #   {
-  #     "workspaceKey": "${azurerm_log_analytics_workspace.this.primary_shared_key}"
-  #   }
-  # PROTECTED_SETTINGS
+  depends_on = [
+    azurerm_backup_protected_vm.this
+  ]
 }
 
 # https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/dev_test_global_vm_shutdown_schedule

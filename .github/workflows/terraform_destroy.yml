@@ -41,7 +41,11 @@ jobs:
       run: |
         az login --service-principal --username ${{ secrets.CLIENT_ID }} --password ${{ secrets.CLIENT_SECRET }} --tenant ${{ secrets.TENANT_ID }}
         az account set --subscription ${{ secrets.SUBSCRIPTION_ID }}
-        az configure --defaults group=azc-iac-vse-rg-wvm
+      continue-on-error: true
+
+    # Select resource group
+    - name: Select resource group
+      run: az configure --defaults group=azc-iac-vse-rg-wvm
       continue-on-error: true
 
     # Add keyvault network rule

@@ -11,7 +11,10 @@ on:
       client_ip:
         description: 'Client IP'
         required: true
-        default: "94.134.104.164"
+        default: '94.134.104.164'
+      initial:
+        description: 'Initial Deployment (true or false)'
+        default: 'false'
 
 permissions:
   contents: read
@@ -48,8 +51,15 @@ jobs:
         az configure --defaults group=azc-iac-vse-rg-wvm
       continue-on-error: true
 
+    # Select resource group
+    - name: Select resource group
+      if:  ${{ github.event.inputs.initial }} == 'false'
+      run: az configure --defaults group=azc-iac-vse-rg-wvm
+      continue-on-error: true
+
     # Add keyvault network rule
     - name: Add keyvault network rule
+      if:  ${{ github.event.inputs.initial }} == 'false'
       run: |
         export TF_VAR_agent_ip=$(curl -s ipinfo.io/ip)
         az keyvault network-rule add --name azc-iac-vse-kv --ip-address ${TF_VAR_agent_ip}
@@ -57,6 +67,7 @@ jobs:
 
     # Disable soft delete of Recovery Service Vault
     - name: Disable softe delete of Recover Service Vault
+      if:  ${{ github.event.inputs.initial }} == 'false'
       run: |
         az backup vault backup-properties set --soft-delete-feature-state Disable --name azc-iac-vse-rsv
       continue-on-error: true
