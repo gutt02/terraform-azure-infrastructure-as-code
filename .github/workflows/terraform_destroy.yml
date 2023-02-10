@@ -36,13 +36,15 @@ jobs:
       with:
         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-    # Add IP of deployment agent to the Key Vault
-    - name: Add keyvault network rule
+    # Add IP of deployment agent to the Key Vault, disable soft delete of Recovery Service Vault
+    - name: Add keyvault network rule, disable softe delete of Recover Service Vault
       run: |
         export TF_VAR_agent_ip=$(curl -s ipinfo.io/ip)
         az login --service-principal --username ${{ secrets.CLIENT_ID }} --password ${{ secrets.CLIENT_SECRET }} --tenant ${{ secrets.TENANT_ID }}
         az account set --subscription ${{ secrets.SUBSCRIPTION_ID }}
+        az configure --defaults group=azc-iac-vse-rg-wvm
         az keyvault network-rule add --name azc-iac-vse-kv --ip-address ${TF_VAR_agent_ip}
+        az backup vault backup-properties set --soft-delete-feature-state Disable --name azc-iac-vse-rsv
         az logout
       continue-on-error: true
 
