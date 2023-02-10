@@ -40,16 +40,25 @@ jobs:
       with:
         cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-    # Add IP of deployment agent to the Key Vault, disable soft delete of Recovery Service Vault
-    - name: Add keyvault network rule, disable softe delete of Recover Service Vault
+    # Azure login
+    - name: Azure login
       run: |
-        export TF_VAR_agent_ip=$(curl -s ipinfo.io/ip)
         az login --service-principal --username ${{ secrets.CLIENT_ID }} --password ${{ secrets.CLIENT_SECRET }} --tenant ${{ secrets.TENANT_ID }}
         az account set --subscription ${{ secrets.SUBSCRIPTION_ID }}
         az configure --defaults group=azc-iac-vse-rg-wvm
+      continue-on-error: true
+
+    # Add keyvault network rule
+    - name: Add keyvault network rule
+      run: |
+        export TF_VAR_agent_ip=$(curl -s ipinfo.io/ip)
         az keyvault network-rule add --name azc-iac-vse-kv --ip-address ${TF_VAR_agent_ip}
+      continue-on-error: true
+
+    # Disable soft delete of Recovery Service Vault
+    - name: Add keyvault network rule, disable softe delete of Recover Service Vault
+      run: |
         az backup vault backup-properties set --soft-delete-feature-state Disable --name azc-iac-vse-rsv
-        az logout
       continue-on-error: true
 
     # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
@@ -69,7 +78,7 @@ jobs:
     # Generates an execution plan for Terraform
     - name: Terraform Plan
       run: |
-        export TF_VAR_agent_ip=$(curl -s ipinfo.io/ip)
+        export TF_VAR_agent_ip="$(curl -s ipinfo.io/ip)/32"
         terraform plan -input=false -var=location=${{ github.event.inputs.location }} -var=client_ip=$TF_VAR_client_ip -out=${{ env.plan_file }}
       env:
         ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
@@ -89,14 +98,21 @@ jobs:
         ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
         ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
 
-    # Remove IP of deployment agent to the Key Vault, enable soft delete of Recovery Service Vault
-    - name: Reomve keyvault network rule, enable softe delete of Recover Service Vault
+    # Remove keyvault network rule
+    - name: Remove keyvault network rule
       run: |
-        export TF_VAR_agent_ip=$(curl -s ipinfo.io/ip)
-        az login --service-principal --username ${{ secrets.CLIENT_ID }} --password ${{ secrets.CLIENT_SECRET }} --tenant ${{ secrets.TENANT_ID }}
-        az account set --subscription ${{ secrets.SUBSCRIPTION_ID }}
-        az configure --defaults group=azc-iac-vse-rg-wvm
+        export TF_VAR_agent_ip="$(curl -s ipinfo.io/ip)/32"
         az keyvault network-rule remove --name azc-iac-vse-kv --ip-address ${TF_VAR_agent_ip}
+      continue-on-error: true
+
+    # Enable soft delete of Recovery Service Vault
+    - name: Enable softe delete of Recover Service Vault
+      run: |
         az backup vault backup-properties set --soft-delete-feature-state Enable --name azc-iac-vse-rsv
+      continue-on-error: true
+
+    # Azure logout
+    - name: Azure logout
+      run: |
         az logout
       continue-on-error: true

@@ -74,4 +74,10 @@ resource "azurerm_recovery_services_vault" "this" {
   }
 
   sku = "Standard"
+
+  lifecycle {
+    ignore_changes = [
+      soft_delete_enabled
+    ]
+  }
 }
