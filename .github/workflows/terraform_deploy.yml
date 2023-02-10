@@ -76,7 +76,7 @@ jobs:
         ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
         ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
         ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
-        TF_VAR_client_ip: '{"name":"ClientIP01","cidr":"${{ github.event.inputs.location }}/32","start_ip_address":"${{ github.event.inputs.location }}","end_ip_address":"${{ github.event.inputs.location }}"}'
+        TF_VAR_client_ip: '{"name":"ClientIP01","cidr":"${{ github.event.inputs.client_ip }}/32","start_ip_address":"${{ github.event.inputs.client_ip }}","end_ip_address":"${{ github.event.inputs.client_ip }}"}'
         TF_VAR_client_secret: ${{ secrets.CLIENT_SECRET }}
         TF_VAR_user_object_id: ${{ secrets.USER_OBJECT_ID }}
         TF_VAR_windows_virtual_machine_admin_username: ${{ secrets.WINDOWS_VIRTUAL_MACHINE_ADMIN_USERNAME }}
