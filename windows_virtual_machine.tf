@@ -60,6 +60,25 @@ resource "azurerm_windows_virtual_machine" "this" {
       admin_password
     ]
   }
+
+  depends_on = [
+    azurerm_recovery_services_vault.this
+  ]
+}
+
+# https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/dev_test_global_vm_shutdown_schedule
+resource "azurerm_dev_test_global_vm_shutdown_schedule" "this" {
+  virtual_machine_id = azurerm_windows_virtual_machine.this.id
+  location           = var.location
+
+  enabled = true
+
+  daily_recurrence_time = "1700"
+  timezone              = "UTC"
+
+  notification_settings {
+    enabled = false
+  }
 }
 
 # https://learn.microsoft.com/de-de/azure/virtual-machines/extensions/oms-windows
@@ -79,25 +98,6 @@ resource "azurerm_virtual_machine_extension" "this" {
   protected_settings = jsonencode({
     "workspaceKey" = "${azurerm_log_analytics_workspace.this.primary_shared_key}"
   })
-
-  depends_on = [
-    azurerm_backup_protected_vm.this
-  ]
-}
-
-# https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/dev_test_global_vm_shutdown_schedule
-resource "azurerm_dev_test_global_vm_shutdown_schedule" "this" {
-  virtual_machine_id = azurerm_windows_virtual_machine.this.id
-  location           = var.location
-
-  enabled = true
-
-  daily_recurrence_time = "1700"
-  timezone              = "UTC"
-
-  notification_settings {
-    enabled = false
-  }
 }
 
 # terraform is unable to destory (complete) this resource
@@ -109,6 +109,11 @@ resource "azurerm_backup_protected_vm" "this" {
   recovery_vault_name = azurerm_recovery_services_vault.this.name
   source_vm_id        = azurerm_windows_virtual_machine.this.id
   backup_policy_id    = "${azurerm_recovery_services_vault.this.id}/backupPolicies/DefaultPolicy"
+
+  depends_on = [
+    azurerm_windows_virtual_machine.this,
+    azurerm_virtual_machine_extension.this
+  ]
 
   timeouts {
     delete = "5m"

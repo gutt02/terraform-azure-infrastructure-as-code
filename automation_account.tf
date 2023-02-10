@@ -27,10 +27,23 @@ resource "time_offset" "this" {
   offset_days = 1
 }
 
+
+# # https://registry.terraform.io/providers/hashicorp/time/latest/docs/resources/sleep
+resource "time_sleep" "delay" {
+  depends_on = [
+    azurerm_automation_account.this,
+    azurerm_windows_virtual_machine.this,
+    azurerm_virtual_machine_extension.this
+  ]
+
+  create_duration = "120s"
+}
 # https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group_template_deployment
 resource "azurerm_resource_group_template_deployment" "this" {
   name                = "WindowsUpdate"
   resource_group_name = azurerm_resource_group.this.name
+
+  deployment_mode = "Incremental"
 
   template_content = <<DEPLOY
   {
@@ -77,5 +90,7 @@ resource "azurerm_resource_group_template_deployment" "this" {
   }
   DEPLOY
 
-  deployment_mode = "Incremental"
+  depends_on = [
+    time_sleep.delay
+  ]
 }
