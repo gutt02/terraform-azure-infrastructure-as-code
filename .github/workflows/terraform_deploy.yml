@@ -1,4 +1,4 @@
-name: 'Terraform Deploy'
+name: "Terraform Deploy"
 
 on:
   workflow_dispatch:
@@ -6,18 +6,18 @@ on:
       location:
         type: string
         required: true
-        default: 'westeurope'
-        description: 'Azure Region'
+        default: "westeurope"
+        description: "Azure Region"
       client_ip:
         type: string
         required: true
-        default: '94.134.104.164'
-        description: 'Client IP'
+        default: "94.134.104.164"
+        description: "Client IP"
       initial:
         type: string
         required: true
-        default: 'false'
-        description: 'Initial Deployment (true or false)'
+        default: "false"
+        description: "Initial Deployment (true or false)"
 
 jobs:
   terraform_deploy_shared:
@@ -28,8 +28,20 @@ jobs:
       client_ip: github.event.inputs.client_ip
       initial: github.event.inputs.initial
 
-  # terraform_deploy_windows_virtual_machine:
-  #   runs-on: ubuntu-latest
-  #   needs: job1
-  #   steps:
-  #     - run: echo ${{ needs.job1.outputs.firstword }} ${{ needs.job1.outputs.secondword }}
+  terraform_deploy_windows_virtual_machine:
+    name: Terraform Deploy Windows Virtual Machine
+    needs: terraform_deploy_shared
+    uses: gutt02/terraform-azure-infrastructure-as-code/.github/workflows/terraform_deploy_windows_virtual_machine.yml
+    with:
+      location: github.event.inputs.location
+      client_ip: github.event.inputs.client_ip
+      initial: github.event.inputs.initial
+      automation_account_name: needs.terraform_deploy_shared.outputs.automation_account_name
+      key_vault_id: needs.terraform_deploy_shared.outputs.key_vault_id
+      log_analytics_workspace_id: needs.terraform_deploy_shared.outputs.log_analytics_workspace_id
+      mgmt_resource_group_name: needs.terraform_deploy_shared.outputs.mgmt_resource_group_name
+      recovery_service_vault_id: needs.terraform_deploy_shared.outputs.recovery_service_vault_id
+      recovery_services_vault_name: needs.terraform_deploy_shared.outputs.recovery_services_vault_name
+      subnet_id: needs.terraform_deploy_shared.outputs.subnet_id
+    secrets:
+      log_analytics_workspace_primary_shared_key: needs.terraform_deploy_shared.outputs.log_analytics_workspace_primary_shared_key
