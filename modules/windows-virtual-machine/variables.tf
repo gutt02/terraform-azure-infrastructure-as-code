@@ -4,11 +4,21 @@ locals {
   is_windows = substr(pathexpand("~"), 0, 1) == "/" ? false : true
 }
 
+variable "admin_username" {
+  type        = string
+  sensitive   = true
+  description = "Windows Virtual Machine Admin User."
+}
+
 # curl ipinfo.io/ip
 variable "agent_ip" {
-  type = string
-
+  type        = string
   description = "IP of the deployment agent."
+}
+
+variable "automation_account_name" {
+  type        = string
+  description = "Name of the automation account."
 }
 
 # curl ipinfo.io/ip
@@ -36,10 +46,31 @@ variable "client_secret" {
   description = "Client secret of the service principal."
 }
 
+variable "key_vault_id" {
+  type        = string
+  description = "Id of the key vault to store the admin password."
+}
+
 variable "location" {
   type        = string
   default     = "westeurope"
   description = "Default Azure region, use Azure CLI notation."
+}
+
+variable "log_analytics_workspace_id" {
+  type        = string
+  description = "Id of the log analytics workspace used by the MicrosoftMonitoringAgent."
+}
+
+variable "log_analytics_workspace_primary_shared_key" {
+  type        = string
+  sensitive   = true
+  description = "Primary shared key of the log analytics workspace used by the MicrosoftMonitoringAgent."
+}
+
+variable "mgmt_resource_group_name" {
+  type        = string
+  description = "Name of the management resource group."
 }
 
 variable "project" {
@@ -56,6 +87,21 @@ variable "project" {
   }
 
   description = "Project details, like customer name, environment, etc."
+}
+
+variable "recovery_services_vault_name" {
+  type        = string
+  description = "Name of the recovery service vault for the backup of the virtual machine."
+}
+
+variable "recovery_services_vault_id" {
+  type        = string
+  description = "Id of the recovery service vault for the backup of the virtual machine."
+}
+
+variable "subnet_id" {
+  type        = string
+  description = "Id of the subnet used for the private IP address of the virtual machine."
 }
 
 variable "tags" {
@@ -76,43 +122,6 @@ variable "tags" {
   }
 
   description = "Default tags for resources, only applied to resource groups"
-}
-
-variable "user_object_id" {
-  type      = string
-  sensitive = true
-
-  description = "User object id, who needs access to the Key Vault."
-}
-
-variable "virtual_network" {
-  type = object({
-    address_space = string
-
-    subnets = map(object({
-      name          = string
-      address_space = string
-    }))
-  })
-
-  default = {
-    address_space = "192.168.255.0/27"
-
-    subnets = {
-      virtual_machine = {
-        name          = "virtual-machine"
-        address_space = "192.168.255.0/28"
-      }
-    }
-  }
-
-  description = "VNET destails."
-}
-
-variable "windows_virtual_machine_admin_username" {
-  type        = string
-  sensitive   = true
-  description = "Windows Virtual Machine Admin User."
 }
 
 variable "windows_virtual_machine" {
