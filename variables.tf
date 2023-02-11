@@ -22,9 +22,9 @@ variable "client_ip" {
 
   default = {
     name             = "ClientIP01"
-    cidr             = "94.134.104.164/32"
-    start_ip_address = "94.134.104.164"
-    end_ip_address   = "94.134.104.164"
+    cidr             = "94.134.104.174/32"
+    start_ip_address = "94.134.104.174"
+    end_ip_address   = "94.134.104.174"
   }
 
   description = "List of client ips, can be empty."

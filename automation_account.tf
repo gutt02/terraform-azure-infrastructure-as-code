@@ -27,70 +27,43 @@ resource "time_offset" "this" {
   offset_days = 1
 }
 
-
-# # https://registry.terraform.io/providers/hashicorp/time/latest/docs/resources/sleep
-resource "time_sleep" "delay" {
-  depends_on = [
-    azurerm_automation_account.this,
-    azurerm_windows_virtual_machine.this,
-    azurerm_virtual_machine_extension.this
-  ]
-
-  create_duration = "120s"
+# https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/monitor_diagnostic_categories
+data "azurerm_monitor_diagnostic_categories" "this" {
+  resource_id = azurerm_automation_account.this.id
 }
-# https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/resource_group_template_deployment
-resource "azurerm_resource_group_template_deployment" "this" {
-  name                = "WindowsUpdate"
-  resource_group_name = azurerm_resource_group.this.name
 
-  deployment_mode = "Incremental"
+# https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_diagnostic_setting
+resource "azurerm_monitor_diagnostic_setting" "this" {
+  name                           = "Update"
+  target_resource_id             = azurerm_automation_account.this.id
+  log_analytics_workspace_id     = azurerm_log_analytics_workspace.this.id
+  log_analytics_destination_type = "AzureDiagnostics"
 
-  template_content = <<DEPLOY
-  {
-    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-    "contentVersion": "1.0.0.0",
-    "resources": [
-      {
-          "apiVersion": "2017-05-15-preview",
-          "type": "Microsoft.Automation/automationAccounts/softwareUpdateConfigurations",
-          "name": "${azurerm_automation_account.this.name}/windows-updates",
-          "properties": {
-              "updateConfiguration": {
-                  "operatingSystem": "Windows",
-                  "duration": "PT${local.update_max_hours}H",
-                  "windows": {
-                      "excludedKbNumbers": [
-                      ],
-                      "includedUpdateClassifications": "${local.update_classifications}",
-                      "rebootSetting": "${local.update_reboot_settings}"
-                  },
-                  "azureVirtualMachines": [
-                      "${azurerm_windows_virtual_machine.this.id}"
-                  ],
-                  "nonAzureComputerNames": [
-                  ]
-              },
-              "scheduleInfo": {
-                  "frequency": "Month",
-                  "startTime": "${local.update_date}T${local.update_time}:00",
-                  "timeZone":  "${local.update_timezone}",
-                  "interval": 1,
-                  "advancedSchedule": {
-                      "monthlyOccurrences": [
-                          {
-                            "occurrence": "${local.update_occurrence}",
-                            "day": "${local.update_day}"
-                          }
-                      ]
-                  }
-              }
-          }
+  dynamic "enabled_log" {
+    for_each = data.azurerm_monitor_diagnostic_categories.this.log_category_types
+
+    content {
+      category = enabled_log.key
+
+      retention_policy {
+        enabled = false
       }
+    }
+  }
+
+  metric {
+    category = "AllMetrics"
+    enabled  = false
+
+    retention_policy {
+      days    = 0
+      enabled = false
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      log_analytics_destination_type
     ]
   }
-  DEPLOY
-
-  depends_on = [
-    time_sleep.delay
-  ]
 }

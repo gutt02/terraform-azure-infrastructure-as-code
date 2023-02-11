@@ -60,12 +60,9 @@ resource "azurerm_windows_virtual_machine" "this" {
       admin_password
     ]
   }
-
-  depends_on = [
-    azurerm_recovery_services_vault.this
-  ]
 }
 
+# Shutdown virtual machine automatically
 # https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/dev_test_global_vm_shutdown_schedule
 resource "azurerm_dev_test_global_vm_shutdown_schedule" "this" {
   virtual_machine_id = azurerm_windows_virtual_machine.this.id
@@ -81,6 +78,7 @@ resource "azurerm_dev_test_global_vm_shutdown_schedule" "this" {
   }
 }
 
+# Install monitoring agent, needed for the automated patching
 # https://learn.microsoft.com/de-de/azure/virtual-machines/extensions/oms-windows
 # https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/virtual_machine_extension
 resource "azurerm_virtual_machine_extension" "this" {
@@ -98,24 +96,4 @@ resource "azurerm_virtual_machine_extension" "this" {
   protected_settings = jsonencode({
     "workspaceKey" = "${azurerm_log_analytics_workspace.this.primary_shared_key}"
   })
-}
-
-# terraform is unable to destory (complete) this resource
-# run it first then delete the item from the state file
-# terraform state rm <resource_address>
-# https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/backup_protected_vm
-resource "azurerm_backup_protected_vm" "this" {
-  resource_group_name = azurerm_resource_group.this.name
-  recovery_vault_name = azurerm_recovery_services_vault.this.name
-  source_vm_id        = azurerm_windows_virtual_machine.this.id
-  backup_policy_id    = "${azurerm_recovery_services_vault.this.id}/backupPolicies/DefaultPolicy"
-
-  depends_on = [
-    azurerm_windows_virtual_machine.this,
-    azurerm_virtual_machine_extension.this
-  ]
-
-  timeouts {
-    delete = "5m"
-  }
 }
