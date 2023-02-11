@@ -1,0 +1,165 @@
+name: 'Terraform Deploy Shared'
+
+on:
+  workflow_call:
+    inputs:
+      location:
+        type: string
+        required: true
+        default: 'westeurope'
+        description: 'Azure Region'
+      client_ip:
+        type: string
+        required: true
+        default: '94.134.104.164'
+        description: 'Client IP'
+      initial:
+        type: string
+        required: true
+        default: 'false'
+        description: 'Initial Deployment (true or false)'
+    output:
+      automation_account_name:
+        type: string
+        value: ${{ jobs.terraform.outputs.automation_account_name }}
+        description: 'Name of the automation account.'
+      key_vault_id:
+        type: string
+        value: ${{ jobs.terraform.outputs.key_vault_id }}
+        description: 'Id of the key vault to store the admin password.'
+      log_analytics_workspace_id:
+        type: string
+        value: ${{ jobs.terraform.outputs.log_analytics_workspace_id }}
+        description: 'Id of the log analytics workspace used by the MicrosoftMonitoringAgent.'
+      log_analytics_workspace_primary_shared_key:
+        type: string
+        senstive: true
+        value: ${{ jobs.terraform.outputs.log_analytics_workspace_primary_shared_key }}
+        description: 'Primary shared key of the log analytics workspace used by the MicrosoftMonitoringAgent.'
+      mgmt_resource_group_name:
+        type: string
+        value: ${{ jobs.terraform.outputs.mgmt_resource_group_name }}
+        description: 'Name of the management resource group.'
+      recovery_service_vault_id:
+        type: string
+        value: ${{ jobs.terraform.outputs.recovery_service_vault_id }}
+        description: 'Id of the recovery service vault for the backup of the virtual machine.'
+      recovery_services_vault_name:
+        type: string
+        value: ${{ jobs.terraform.outputs.recovery_services_vault_name }}
+        description: 'Name of the recovery service vault for the backup of the virtual machine.'
+      subnet_id:
+        type: string
+        value: ${{ jobs.terraform.outputs.subnet_id }}
+        description: 'Id of the subnet used for the private IP address of the virtual machine.'
+
+permissions:
+  contents: read
+
+env:
+  mgmt_resource_group_name: azc-iac-vse-rg-mgmt
+  state_key: azc-iac-vse-sha.tfstate
+  plan_file: deploy.tfplan
+  working_directory: modules/shared
+
+jobs:
+  terraform:
+    name: 'Terraform'
+    runs-on: ubuntu-latest
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    # Checkout the repository to the GitHub Actions runner
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+    # Azure login
+    - name: Azure login
+      run: |
+        az login --service-principal --username ${{ secrets.CLIENT_ID }} --password ${{ secrets.CLIENT_SECRET }} --tenant ${{ secrets.TENANT_ID }}
+        az account set --subscription ${{ secrets.SUBSCRIPTION_ID }}
+      continue-on-error: true
+
+    # Disable soft delete of Recovery Service Vault
+    - name: Disable softe delete of Recover Service Vault
+      if:  github.event.inputs.initial == 'false'
+      run: |
+        az backup vault backup-properties set --soft-delete-feature-state Disable --name azc-iac-vse-rsv --resource-group ${{ env.mgmt_resource_group_name}}
+      continue-on-error: true
+
+    # Initialize a new or existing Terraform working directory by creating initial files, loading any remote state, downloading modules, etc.
+    - name: Terraform Init
+      run: terraform init
+      env:  
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+        ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
+        TF_CLI_ARGS_init: '-backend-config=resource_group_name=${{ vars.STATE_RESOURCE_GROUP_NAME }} -backend-config=storage_account_name=${{ vars.STATE_STORAGE_ACCOUNT_NAME }} -backend-config=container_name=${{ vars.STATE_CONTAINER_NAME }} -backend-config=key=${{ env.state_key }}'
+        working_directory: modules/shared
+      working-directory: ${{ env.working_directory }}
+
+    # Checks that all Terraform configuration files adhere to a canonical format
+    - name: Terraform Format
+      run: terraform fmt -check
+      working-directory: ${{ env.working_directory }}
+
+    # Generates an execution plan for Terraform
+    - name: Terraform Plan
+      run: |
+        export TF_VAR_agent_ip="$(curl -s ipinfo.io/ip)/32"
+        terraform plan -input=false -var=location=${{ github.event.inputs.location }} -var=client_ip=$TF_VAR_client_ip -out=${{ env.plan_file }}
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+        ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
+        TF_VAR_client_ip: '{"name":"ClientIP01","cidr":"${{ github.event.inputs.client_ip }}/32","start_ip_address":"${{ github.event.inputs.client_ip }}","end_ip_address":"${{ github.event.inputs.client_ip }}"}'
+        TF_VAR_client_secret: ${{ secrets.CLIENT_SECRET }}
+        TF_VAR_user_object_id: ${{ secrets.USER_OBJECT_ID }}
+        TF_VAR_windows_virtual_machine_admin_username: ${{ vars.ADMIN_USERNAME }}
+      working-directory: ${{ env.working_directory }}
+
+    - name: Terraform Apply
+      run: terraform apply -input=false ${{ env.plan_file }}
+      env:
+        ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+        ARM_SUBSCRIPTION_ID: ${{ secrets.SUBSCRIPTION_ID }}
+        ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
+      working-directory: ${{ env.working_directory }}
+
+    - name: Terraform Output
+      run: |
+        echo "automation_account_name=$(terraform output automation_account_name) >> $GITHUB_OUTPUT
+        echo "key_vault_id=$(terraform output key_vault_id) >> $GITHUB_OUTPUT
+        echo "log_analytics_workspace_id=$(terraform output log_analytics_workspace_id) >> $GITHUB_OUTPUT
+        echo "log_analytics_workspace_primary_shared_key=$(terraform output log_analytics_workspace_primary_shared_key) >> $GITHUB_OUTPUT
+        echo "mgmt_resource_group_name=$(terraform output mgmt_resource_group_name) >> $GITHUB_OUTPUT
+        echo "recovery_service_vault_id=$(terraform output recovery_service_vault_id) >> $GITHUB_OUTPUT
+        echo "recovery_services_vault_name=$(terraform output recovery_services_vault_name) >> $GITHUB_OUTPUT
+        echo "subnet_id=$(terraform output subnet_id) >> $GITHUB_OUTPUT
+      working-directory: ${{ env.working_directory }}
+
+    # Enable soft delete of Recovery Service Vault
+    - name: Enable softe delete of Recover Service Vault
+      if:  github.event.inputs.initial == 'false'
+      run: |
+        az backup vault backup-properties set --soft-delete-feature-state Enable --name azc-iac-vse-rsv --resource-group ${{ env.mgmt_resource_group_name}}
+      continue-on-error: true
+
+    # Azure logout
+    - name: Azure logout
+      run: |
+        az logout
+      continue-on-error: true
