@@ -1,0 +1,211 @@
+name: "Module - Terraform Apply"
+
+on:
+  workflow_call:
+    inputs:
+      MODULE:
+        type: string
+        required: true
+        description: "Terraform module"
+      LOCATION:
+        type: string
+        required: true
+        description: "Azure Region"
+      CLIENT_IP:
+        type: string
+        required: true
+        description: "Client IP"
+      INITIAL:
+        type: string
+        required: true
+        description: "Initial Deployment (true or false)"
+      AUTOMATION_ACCOUNT_NAME:
+        type: string
+        required: true
+        description: "Name of the automation account."
+      KEY_VAULT_ID:
+        type: string
+        required: true
+        description: "Id of the key vault to store the admin password."
+      LOG_ANALYTICS_WORKSPACE_ID:
+        type: string
+        required: true
+        description: "Id of the log analytics workspace used by the MicrosoftMonitoringAgent."
+      MGMT_RESOURCE_GROUP_NAME:
+        type: string
+        required: true
+        description: "Name of the management resource group."
+      RECOVERY_SERVICES_VAULT_ID:
+        type: string
+        required: true
+        description: "Id of the recovery service vault for the backup of the virtual machine."
+      RECOVERY_SERVICES_VAULT_NAME:
+        type: string
+        required: true
+        description: "Name of the recovery service vault for the backup of the virtual machine."
+      SUBNET_ID:
+        type: string
+        required: true
+        description: "Id of the subnet used for the private IP address of the virtual machine."
+    secrets:
+      CLIENT_ID:
+        required: true
+      CLIENT_SECRET:
+        required: true
+      TENANT_ID:
+        required: true
+      log_analytics_workspace_primary_shared_key:
+        required: true
+        description: "Primary shared key of the log analytics workspace used by the MicrosoftMonitoringAgent."
+
+permissions:
+  contents: read
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+  ARM_SUBSCRIPTION_ID: ${{ vars.SUBSCRIPTION_ID }}
+  ARM_TENANT_ID: ${{ secrets.TENANT_ID }}
+  KEY_VAULT_NAME: ${{ vars.PROJECT_CUSTOMER }}-${{ vars.PROJECT_NAME }}-${{ vars.PROJECT_ENVIRONMENT }}-kv
+  MGMT_RESOURCE_GROUP_NAME: ${{ vars.PROJECT_CUSTOMER }}-${{ vars.PROJECT_NAME }}-${{ vars.PROJECT_ENVIRONMENT }}-rg-mgmt
+  PLAN_FILE: ${{ inputs.MODULE }}.tfplan
+  STATE_KEY: ${{ vars.PROJECT_CUSTOMER }}-${{ vars.PROJECT_NAME }}-${{ vars.PROJECT_ENVIRONMENT }}-${{ inputs.MODULE }}.tfstate
+  WORKING_DIRECTORY: ./modules/${{ inputs.MODULE }}
+
+jobs:
+  terraform_plan:
+    name: "Terraform Plan"
+    runs-on: ubuntu-latest
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+    steps:
+      # Checkout the repository to the GitHub Actions runner
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set agent ip
+        run: echo "AGENT_IP=`curl -s ipinfo.io/ip`/32" >> $GITHUB_ENV
+
+      - name: Azure login
+        run: |
+          az login --service-principal --username ${{ secrets.CLIENT_ID }} --password ${{ secrets.CLIENT_SECRET }} --tenant ${{ secrets.TENANT_ID }}
+          az account set --subscription ${{ vars.SUBSCRIPTION_ID }}
+        continue-on-error: true
+
+      - name: Add keyvault network rule
+        run: az keyvault network-rule add --name ${{ env.KEY_VAULT_NAME }} --ip-address ${{ env.AGENT_IP }} --resource-group ${{ env.MGMT_RESOURCE_GROUP_NAME}}
+        continue-on-error: true
+
+      # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+          # required for terraform output
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: |
+          export TF_CLI_ARGS_init="-backend-config=resource_group_name=${{ vars.STATE_RESOURCE_GROUP_NAME }} -backend-config=storage_account_name=${{ vars.STATE_STORAGE_ACCOUNT_NAME }} -backend-config=container_name=${{ vars.STATE_CONTAINER_NAME }} -backend-config=key=${{ env.STATE_KEY }}"
+          terraform init
+
+      - name: Terraform Format
+        run: terraform fmt -check
+
+      - name: Terraform Plan
+        run: |
+          export TF_VAR_admin_username=${{ vars.ADMIN_USERNAME }}
+          export TF_VAR_agent_ip=${{ env.AGENT_IP }}
+          export TF_VAR_automation_account_name=${{ inputs.AUTOMATION_ACCOUNT_NAME }}
+          export TF_VAR_key_vault_id=${{ inputs.KEY_VAULT_ID }}
+          export TF_VAR_log_analytics_workspace_id=${{ inputs.LOG_ANALYTICS_WORKSPACE_ID }}
+          export TF_VAR_log_analytics_workspace_primary_shared_key=${{ secrets.log_analytics_workspace_primary_shared_key }}
+          export TF_VAR_mgmt_resource_group_name=${{ inputs.MGMT_RESOURCE_GROUP_NAME }}
+          export TF_VAR_recovery_services_vault_id=${{ inputs.RECOVERY_SERVICES_VAULT_ID }}
+          export TF_VAR_recovery_services_vault_name=${{ inputs.RECOVERY_SERVICES_VAULT_NAME }}
+          export TF_VAR_subnet_id=${{ inputs.SUBNET_ID }}
+          export TF_VAR_client_ip='{"name":"ClientIP01","cidr":"${{ inputs.CLIENT_IP }}/32","start_ip_address":"${{ inputs.CLIENT_IP }}","end_ip_address":"${{ inputs.CLIENT_IP }}"}'
+          export TF_VAR_client_secret=${{ secrets.CLIENT_SECRET }}
+          terraform plan -input=false -var=location=${{ inputs.LOCATION }} -var=client_ip=$TF_VAR_client_ip -out=${{ env.PLAN_FILE }}
+
+      - name: Upload state file
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ env.PLAN_FILE }}
+          path: ${{ env.WORKING_DIRECTORY }}/${{ env.PLAN_FILE }}
+          retention-days: 1
+
+      - name: Remove keyvault network rule
+        run: az keyvault network-rule remove --name ${{ env.KEY_VAULT_NAME }} --ip-address ${{ env.AGENT_IP }} --resource-group ${{ env.MGMT_RESOURCE_GROUP_NAME}}
+        continue-on-error: true
+
+      - name: Azure logout
+        run: az logout
+        continue-on-error: true
+
+  terraform_apply:
+    needs: terraform_plan
+    name: "Terraform Apply"
+    runs-on: ubuntu-latest
+
+    # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+    steps:
+      # Checkout the repository to the GitHub Actions runner
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set agent ip
+        run: echo "AGENT_IP=`curl -s ipinfo.io/ip`/32" >> $GITHUB_ENV
+
+      - name: Azure login
+        run: |
+          az login --service-principal --username ${{ secrets.CLIENT_ID }} --password ${{ secrets.CLIENT_SECRET }} --tenant ${{ secrets.TENANT_ID }}
+          az account set --subscription ${{ vars.SUBSCRIPTION_ID }}
+        continue-on-error: true
+
+      - name: Add keyvault network rule
+        run: az keyvault network-rule add --name ${{ env.KEY_VAULT_NAME }} --ip-address ${{ env.AGENT_IP }} --resource-group ${{ env.MGMT_RESOURCE_GROUP_NAME}}
+        continue-on-error: true
+
+      # Install the latest version of Terraform CLI and configure the Terraform CLI configuration file with a Terraform Cloud user API token
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+          # required for terraform output
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: |
+          export TF_CLI_ARGS_init="-backend-config=resource_group_name=${{ vars.STATE_RESOURCE_GROUP_NAME }} -backend-config=storage_account_name=${{ vars.STATE_STORAGE_ACCOUNT_NAME }} -backend-config=container_name=${{ vars.STATE_CONTAINER_NAME }} -backend-config=key=${{ env.STATE_KEY }}"
+          terraform init
+
+      - name: Download state file
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ env.PLAN_FILE }}
+          path: ${{ env.WORKING_DIRECTORY }}
+
+      - name: Terraform Show
+        run: terraform show ${{ env.PLAN_FILE }}
+
+      - name: Terraform Apply
+        run: terraform apply -input=false ${{ env.PLAN_FILE }}
+
+      - name: Remove keyvault network rule
+        run: az keyvault network-rule remove --name ${{ env.KEY_VAULT_NAME }} --ip-address ${{ env.AGENT_IP }} --resource-group ${{ env.MGMT_RESOURCE_GROUP_NAME}}
+        continue-on-error: true
+
+      - name: Azure logout
+        run: az logout
+        continue-on-error: true

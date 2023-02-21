@@ -1,0 +1,63 @@
+name: "Module - Terraform CI/CD"
+
+on:
+  workflow_dispatch:
+    inputs:
+      LOCATION:
+        type: string
+        required: true
+        default: "westeurope"
+        description: "Azure Region"
+      CLIENT_IP:
+        type: string
+        required: true
+        default: "94.134.104.161"
+        description: "Client IP"
+      INITIAL:
+        type: string
+        required: true
+        default: "no"
+        description: "Initial Deployment (yes or no)"
+
+permissions:
+  contents: read
+
+jobs:
+  terraform_shared_output:
+    name: Shared Output Workflow
+    uses: gutt02/terraform-azure-infrastructure-as-code/.github/workflows/shared_terraform_output.yml@main
+    with:
+      MODULE: shared
+      LOCATION: ${{ github.event.inputs.LOCATION }}
+      CLIENT_IP: ${{ github.event.inputs.CLIENT_IP }}
+      INITIAL: ${{ github.event.inputs.INITIAL }}
+    secrets:
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+      TENANT_ID: ${{ secrets.TENANT_ID }}
+
+  terraform_apply:
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [linux-virtual-machine, windows-virtual-machine]
+    name: Apply Workflow
+    needs: terraform_shared_output
+    uses: gutt02/terraform-azure-infrastructure-as-code/.github/workflows/module_terraform_apply.yml@main
+    with:
+      MODULE: ${{ matrix.module }}
+      LOCATION: ${{ github.event.inputs.LOCATION }}
+      CLIENT_IP: ${{ github.event.inputs.CLIENT_IP }}
+      INITIAL: ${{ github.event.inputs.INITIAL }}
+      automation_account_name: ${{ needs.terraform_shared_output.outputs.automation_account_name }}
+      key_vault_id: ${{ needs.terraform_shared_output.outputs.key_vault_id }}
+      log_analytics_workspace_id: ${{ needs.terraform_shared_output.outputs.log_analytics_workspace_id }}
+      MGMT_RESOURCE_GROUP_NAME: ${{ needs.terraform_shared_output.outputs.MGMT_RESOURCE_GROUP_NAME }}
+      recovery_services_vault_id: ${{ needs.terraform_shared_output.outputs.recovery_services_vault_id }}
+      recovery_services_vault_name: ${{ needs.terraform_shared_output.outputs.recovery_services_vault_name }}
+      subnet_id: ${{ needs.terraform_shared_output.outputs.subnet_id }}
+    secrets:
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+      TENANT_ID: ${{ secrets.TENANT_ID }}
+      log_analytics_workspace_primary_shared_key: ${{ needs.terraform_shared_output.outputs.log_analytics_workspace_primary_shared_key }}
