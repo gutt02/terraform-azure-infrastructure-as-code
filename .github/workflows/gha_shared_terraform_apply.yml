@@ -1,4 +1,4 @@
-name: "Shared - Terraform Apply"
+name: "GitHub Agent - Shared - Terraform Apply"
 
 on:
   workflow_call:

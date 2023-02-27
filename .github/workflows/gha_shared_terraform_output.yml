@@ -1,4 +1,4 @@
-name: "Shared - Terraform Output"
+name: "GitHub Agent - Shared - Terraform Output"
 
 on:
   workflow_call:

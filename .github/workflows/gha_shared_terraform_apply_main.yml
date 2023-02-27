@@ -1,4 +1,4 @@
-name: "Shared - Terraform CI/CD"
+name: "GitHub Agent - Shared - Terraform CI/CD"
 
 on:
   workflow_dispatch:
