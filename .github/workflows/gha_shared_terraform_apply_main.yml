@@ -1,0 +1,51 @@
+name: "Shared - Terraform CI/CD"
+
+on:
+  workflow_dispatch:
+    inputs:
+      LOCATION:
+        type: string
+        required: true
+        default: "westeurope"
+        description: "Azure Region"
+      CLIENT_IP:
+        type: string
+        required: true
+        default: "94.134.104.161"
+        description: "Client IP"
+      INITIAL:
+        type: string
+        required: true
+        default: "no"
+        description: "Initial Deployment (yes or no)"
+
+permissions:
+  contents: read
+
+jobs:
+  terraform_apply:
+    name: Apply Workflow
+    uses: gutt02/terraform-azure-infrastructure-as-code/.github/workflows/gha_shared_terraform_apply.yml@main
+    with:
+      MODULE: shared
+      LOCATION: ${{ github.event.inputs.LOCATION }}
+      CLIENT_IP: ${{ github.event.inputs.CLIENT_IP }}
+      INITIAL: ${{ github.event.inputs.INITIAL }}
+    secrets:
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+      TENANT_ID: ${{ secrets.TENANT_ID }}
+
+  terraform_output:
+    name: Output Workflow
+    needs: terraform_apply
+    uses: gutt02/terraform-azure-infrastructure-as-code/.github/workflows/gha_shared_terraform_output.yml@main
+    with:
+      MODULE: shared
+      LOCATION: ${{ github.event.inputs.LOCATION }}
+      CLIENT_IP: ${{ github.event.inputs.CLIENT_IP }}
+      INITIAL: ${{ github.event.inputs.INITIAL }}
+    secrets:
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+      TENANT_ID: ${{ secrets.TENANT_ID }}
