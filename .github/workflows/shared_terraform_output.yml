@@ -3,6 +3,10 @@ name: "Shared - Terraform Output"
 on:
   workflow_call:
     inputs:
+      RUNS_ON:
+        type: string
+        required: true
+        description: "Actions Runner, either ubuntu-latest or self-hosted"
       MODULE:
         type: string
         required: true
@@ -68,7 +72,8 @@ env:
 jobs:
   terraform_output:
     name: "Terraform Output"
-    runs-on: ubuntu-latest
+    # runs-on: ubuntu-latest
+    runs-on: ${{ inputs.RUNS_ON }}
 
     # Use the Bash shell regardless whether the GitHub Actions runner is ubuntu-latest, macos-latest, or windows-latest
     defaults:

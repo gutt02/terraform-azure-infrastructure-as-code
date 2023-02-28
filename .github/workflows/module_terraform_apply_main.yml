@@ -3,6 +3,11 @@ name: "Module - Terraform CI/CD"
 on:
   workflow_dispatch:
     inputs:
+      RUNS_ON:
+        type: string
+        required: true
+        default: "ubuntu-latest"
+        description: "Actions Runner, either ubuntu-latest or self-hosted"
       MODULE:
         type: string
         required: true
@@ -32,6 +37,7 @@ jobs:
     name: Shared Output Workflow
     uses: gutt02/terraform-azure-infrastructure-as-code/.github/workflows/shared_terraform_output.yml@main
     with:
+      RUNS_ON: ${{ github.event.inputs.RUNS_ON }}
       MODULE: shared
       LOCATION: ${{ github.event.inputs.LOCATION }}
       CLIENT_IP: ${{ github.event.inputs.CLIENT_IP }}
@@ -50,6 +56,7 @@ jobs:
     needs: terraform_shared_output
     uses: gutt02/terraform-azure-infrastructure-as-code/.github/workflows/module_terraform_apply.yml@main
     with:
+      RUNS_ON: ${{ github.event.inputs.RUNS_ON }}
       # MODULE: ${{ matrix.module }}
       MODULE: ${{ github.event.inputs.MODULE }}
       LOCATION: ${{ github.event.inputs.LOCATION }}
