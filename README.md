@@ -541,3 +541,117 @@ variable "linux_virtual_machine" {
 ```
 
 ## GitHub Actions
+
+## shared_terraform_apply_main.yml
+
+Main YAML pipeline to deploy shared services.
+
+### Inputs
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| RUNS_ON | string | true | ubuntu-latest | Actions Runner, either ubuntu-latest or self-hosted. |
+| LOCATION | string | true | westeurope | Azure Region |
+| CLIENT_IP | string | true | 94.134.104.161 | Client IP |
+| INITIAL | string | true | no | Initial Deployment (yes or no). | 
+
+## shared_terraform_apply.yml
+
+Callable YAML pipline to deploy shared services.
+
+### Inputs
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| RUNS_ON | string | true | ubuntu-latest | Actions Runner, either ubuntu-latest or self-hosted |
+| MODULE | string | true | - | Module to be deployed. |
+| LOCATION | string | true | westeurope | Azure Region |
+| CLIENT_IP | string | true | 94.134.104.161 | Client IP |
+| INITIAL | string | true | no | Initial Deployment (yes or no) | 
+
+### Secrets
+
+| Secret | Required |
+| --- | --- |
+| CLIENT_ID | true |
+| CLIENT_SECRET | true |
+| TENANT_ID | true |
+
+## shared_terraform_output.yml
+
+Callable YAML pipeline to export output values.
+
+### Inputs
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| RUNS_ON | string | true | ubuntu-latest | Actions Runner, either ubuntu-latest or self-hosted |
+| MODULE | string | true | - | Module to be deployed. |
+| LOCATION | string | true | westeurope | Azure Region |
+| CLIENT_IP | string | true | 94.134.104.161 | Client IP |
+| INITIAL | string | true | no | Initial Deployment (yes or no) | 
+
+### Secrets
+
+| Secret | Required | Description |
+| --- | --- | --- |
+| CLIENT_ID | true | Client Id of the service principal |
+| CLIENT_SECRET | true | Client secret of the service principal |
+| TENANT_ID | true | | Tenat Id
+
+### Outputs
+
+| Output | Description |
+| --- | --- |
+| AUTOMATION_ACCOUNT_NAME | Name of the automation account. |
+| KEY_VAULT_ID | Id of the key vault to store the admin password. |
+| LOG_ANALYTICS_WORKSPACE_ID | Id of the log analytics workspace used by the MicrosoftMonitoringAgent. |
+| LOG_ANALYTICS_WORKSPACE_PRIMARY_SHARED_KEY | Primary shared key of the log analytics workspace used by the MicrosoftMonitoringAgent. |
+| MGMT_RESOURCE_GROUP_NAME | Name of the management resource group. |
+| RECOVERY_SERVICES_VAULT_ID | Id of the recovery service vault for the backup of the virtual machine. |
+| RECOVERY_SERVICES_VAULT_NAME | Name of the recovery service vault for the backup of the virtual machine. |
+| SUBNET_ID | Id of the subnet used for the private IP address of the virtual machine. |
+
+## module_terraform_apply_main.yml
+
+Main YAML pipeline to deploy a module.
+
+### Inputs
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| RUNS_ON | string | true | ubuntu-latest | Actions Runner, either ubuntu-latest or self-hosted. |
+| MODULE | string | true | linux-virtual-machine | Module to be deployed. |
+| LOCATION | string | true | westeurope | Azure Region |
+| CLIENT_IP | string | true | 94.134.104.161 | Client IP |
+| INITIAL | string | true | no | Initial Deployment (yes or no). | 
+
+## module_terraform_apply.yml
+
+Callable YAML pipline to deploy a module.
+
+### Inputs
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| RUNS_ON | string | true | ubuntu-latest | Actions Runner, either ubuntu-latest or self-hosted |
+| MODULE | string | true | - | Module to be deployed. |
+| LOCATION | string | true | westeurope | Azure Region |
+| CLIENT_IP | string | true | 94.134.104.161 | Client IP |
+| INITIAL | string | true | no | Initial Deployment (yes or no) | 
+| AUTOMATION_ACCOUNT_NAME | string | true | no | Name of the automation account. |
+| KEY_VAULT_ID | string | true | no | Id of the key vault to store the admin password. |
+| LOG_ANALYTICS_WORKSPACE_ID | string | true | no | Id of the log analytics workspace used by the MicrosoftMonitoringAgent. |
+| LOG_ANALYTICS_WORKSPACE_PRIMARY_SHARED_KEY | string | true | no | Primary shared key of the log analytics workspace used by the MicrosoftMonitoringAgent. |
+| MGMT_RESOURCE_GROUP_NAME | string | true | no | Name of the management resource group. |
+| RECOVERY_SERVICES_VAULT_ID | string | true | no | Id of the recovery service vault for the backup of the virtual machine. |
+| RECOVERY_SERVICES_VAULT_NAME | string | true | no | Name of the recovery service vault for the backup of the virtual machine. |
+| SUBNET_ID | string | true | no | Id of the subnet used for the private IP address of the virtual machine. |
+
+### Secrets
+
+| Secret | Required |
+| --- | --- |
+| CLIENT_ID | true |
+| CLIENT_SECRET | true |
+| TENANT_ID | true |
