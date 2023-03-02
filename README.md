@@ -6,9 +6,14 @@
 * [Pre-Requirements](#pre-requirements)
 * [Modules](#modules)
   * [Shared](#shared)
-  * [Windows Virtual Machine](#windows-virtual-machine)
   * [Linux Virtual Machine](#linux-virtual-machine)
+  * [Windows Virtual Machine](#windows-virtual-machine)
 * [GitHub Actions](#github-actions)
+  * [Shared - Terraform CI/CD](#shared---terraform-cicd)
+  * [Shared - Terraform Apply](#shared---terraform-apply)
+  * [Shared - Terraform Output](#shared---terraform-output)
+  * [Module - Terraform CI/CD](#module---terraform-cicd)
+  * [Module - Terraform Apply](#module---terraform-apply)
 
 ## Introduction
 
@@ -149,200 +154,6 @@ variable "virtual_network" {
   }
 
   description = "VNET destails."
-}
-```
-
-### Windows Virtual Machine
-
-#### Azure Resources
-
-* Public IP
-* Azure Network Interface
-* Windows Virtual Machine, authentication with username and password
-* Managed Disk
-* Disk Attachment
-* Automated Shutdown
-* Automated Backup
-* Automated Patching
-* Add data disk with PowerShell script
-
-#### Variables
-
-```hcl
-variable "admin_username" {
-  type        = string
-  sensitive   = true
-  description = "Windows Virtual Machine Admin User."
-}
-```
-
-```hcl
-# curl ipinfo.io/ip
-variable "agent_ip" {
-  type        = string
-  description = "IP of the deployment agent."
-}
-```
-
-```hcl
-variable "automation_account_name" {
-  type        = string
-  description = "Name of the automation account."
-}
-```
-
-```hcl
-# curl ipinfo.io/ip
-variable "client_ip" {
-  type = object({
-    name             = string
-    cidr             = string
-    start_ip_address = string
-    end_ip_address   = string
-  })
-
-  default = {
-    name             = "ClientIP01"
-    cidr             = "94.134.104.174/32"
-    start_ip_address = "94.134.104.174"
-    end_ip_address   = "94.134.104.174"
-  }
-
-  description = "List of client ips, can be empty."
-}
-```
-
-```hcl
-variable "client_secret" {
-  type        = string
-  sensitive   = true
-  description = "Client secret of the service principal."
-}
-```
-
-```hcl
-variable "key_vault_id" {
-  type        = string
-  description = "Id of the key vault to store the admin password."
-}
-```
-
-```hcl
-variable "location" {
-  type        = string
-  default     = "westeurope"
-  description = "Default Azure region, use Azure CLI notation."
-}
-```
-
-```hcl
-variable "log_analytics_workspace_id" {
-  type        = string
-  description = "Id of the log analytics workspace used by the MicrosoftMonitoringAgent."
-}
-```
-
-```hcl
-variable "log_analytics_workspace_primary_shared_key" {
-  type        = string
-  sensitive   = true
-  description = "Primary shared key of the log analytics workspace used by the MicrosoftMonitoringAgent."
-}
-```
-
-```hcl
-variable "mgmt_resource_group_name" {
-  type        = string
-  description = "Name of the management resource group."
-}
-```
-
-```hcl
-variable "project" {
-  type = object({
-    customer    = string
-    name        = string
-    environment = string
-  })
-
-  default = {
-    customer    = "azc"
-    name        = "iac"
-    environment = "vse"
-  }
-
-  description = "Project details, like customer name, environment, etc."
-}
-```
-
-```hcl
-variable "recovery_services_vault_name" {
-  type        = string
-  description = "Name of the recovery service vault for the backup of the virtual machine."
-}
-```
-
-```hcl
-variable "recovery_services_vault_id" {
-  type        = string
-  description = "Id of the recovery service vault for the backup of the virtual machine."
-}
-```
-
-```hcl
-variable "subnet_id" {
-  type        = string
-  description = "Id of the subnet used for the private IP address of the virtual machine."
-}
-```
-
-```hcl
-variable "tags" {
-  type = object({
-    created_by  = string
-    contact     = string
-    customer    = string
-    environment = string
-    project     = string
-  })
-
-  default = {
-    created_by  = "vsp-base-msdn-sp-tf"
-    contact     = "contact@mede"
-    customer    = "Azure Cloud"
-    environment = "Visual Studio Enterprise"
-    project     = "Infrastructure as Code"
-  }
-
-  description = "Default tags for resources, only applied to resource groups"
-}
-```
-
-```hcl
-variable "windows_virtual_machine" {
-  type = object({
-    size = string
-
-    source_image_reference = object({
-      publisher = string
-      offer     = string
-      sku       = string
-      version   = string
-    })
-  })
-
-  default = {
-    size = "Standard_B2ms"
-
-    source_image_reference = {
-      publisher = "MicrosoftWindowsDesktop"
-      offer     = "Windows-11"
-      sku       = "win11-22h2-pro"
-      version   = "latest"
-    }
-  }
-
-  description = "Windows Virtual Machine."
 }
 ```
 
@@ -540,11 +351,209 @@ variable "linux_virtual_machine" {
 }
 ```
 
+### Windows Virtual Machine
+
+#### Azure Resources
+
+* Public IP
+* Azure Network Interface
+* Windows Virtual Machine, authentication with username and password
+* Managed Disk
+* Disk Attachment
+* Automated Shutdown
+* Automated Backup
+* Automated Patching
+* Add data disk with PowerShell script
+
+#### Variables
+
+```hcl
+variable "admin_username" {
+  type        = string
+  sensitive   = true
+  description = "Windows Virtual Machine Admin User."
+}
+```
+
+```hcl
+# curl ipinfo.io/ip
+variable "agent_ip" {
+  type        = string
+  description = "IP of the deployment agent."
+}
+```
+
+```hcl
+variable "automation_account_name" {
+  type        = string
+  description = "Name of the automation account."
+}
+```
+
+```hcl
+# curl ipinfo.io/ip
+variable "client_ip" {
+  type = object({
+    name             = string
+    cidr             = string
+    start_ip_address = string
+    end_ip_address   = string
+  })
+
+  default = {
+    name             = "ClientIP01"
+    cidr             = "94.134.104.174/32"
+    start_ip_address = "94.134.104.174"
+    end_ip_address   = "94.134.104.174"
+  }
+
+  description = "List of client ips, can be empty."
+}
+```
+
+```hcl
+variable "client_secret" {
+  type        = string
+  sensitive   = true
+  description = "Client secret of the service principal."
+}
+```
+
+```hcl
+variable "key_vault_id" {
+  type        = string
+  description = "Id of the key vault to store the admin password."
+}
+```
+
+```hcl
+variable "location" {
+  type        = string
+  default     = "westeurope"
+  description = "Default Azure region, use Azure CLI notation."
+}
+```
+
+```hcl
+variable "log_analytics_workspace_id" {
+  type        = string
+  description = "Id of the log analytics workspace used by the MicrosoftMonitoringAgent."
+}
+```
+
+```hcl
+variable "log_analytics_workspace_primary_shared_key" {
+  type        = string
+  sensitive   = true
+  description = "Primary shared key of the log analytics workspace used by the MicrosoftMonitoringAgent."
+}
+```
+
+```hcl
+variable "mgmt_resource_group_name" {
+  type        = string
+  description = "Name of the management resource group."
+}
+```
+
+```hcl
+variable "project" {
+  type = object({
+    customer    = string
+    name        = string
+    environment = string
+  })
+
+  default = {
+    customer    = "azc"
+    name        = "iac"
+    environment = "vse"
+  }
+
+  description = "Project details, like customer name, environment, etc."
+}
+```
+
+```hcl
+variable "recovery_services_vault_name" {
+  type        = string
+  description = "Name of the recovery service vault for the backup of the virtual machine."
+}
+```
+
+```hcl
+variable "recovery_services_vault_id" {
+  type        = string
+  description = "Id of the recovery service vault for the backup of the virtual machine."
+}
+```
+
+```hcl
+variable "subnet_id" {
+  type        = string
+  description = "Id of the subnet used for the private IP address of the virtual machine."
+}
+```
+
+```hcl
+variable "tags" {
+  type = object({
+    created_by  = string
+    contact     = string
+    customer    = string
+    environment = string
+    project     = string
+  })
+
+  default = {
+    created_by  = "vsp-base-msdn-sp-tf"
+    contact     = "contact@mede"
+    customer    = "Azure Cloud"
+    environment = "Visual Studio Enterprise"
+    project     = "Infrastructure as Code"
+  }
+
+  description = "Default tags for resources, only applied to resource groups"
+}
+```
+
+```hcl
+variable "windows_virtual_machine" {
+  type = object({
+    size = string
+
+    source_image_reference = object({
+      publisher = string
+      offer     = string
+      sku       = string
+      version   = string
+    })
+  })
+
+  default = {
+    size = "Standard_B2ms"
+
+    source_image_reference = {
+      publisher = "MicrosoftWindowsDesktop"
+      offer     = "Windows-11"
+      sku       = "win11-22h2-pro"
+      version   = "latest"
+    }
+  }
+
+  description = "Windows Virtual Machine."
+}
+```
+
 ## GitHub Actions
 
-## shared_terraform_apply_main.yml
+## Shared - Terraform CI/CD
 
 Main YAML pipeline to deploy shared services.
+
+### Script
+
+shared_terraform_apply_main.yml
 
 ### Inputs
 
@@ -555,9 +564,13 @@ Main YAML pipeline to deploy shared services.
 | CLIENT_IP | string | true | 94.134.104.161 | Client IP |
 | INITIAL | string | true | no | Initial Deployment (yes or no). | 
 
-## shared_terraform_apply.yml
+## Shared - Terraform Apply
 
 Callable YAML pipline to deploy shared services.
+
+### Script
+
+shared_terraform_apply.yml
 
 ### Inputs
 
@@ -577,9 +590,13 @@ Callable YAML pipline to deploy shared services.
 | CLIENT_SECRET | true |
 | TENANT_ID | true |
 
-## shared_terraform_output.yml
+## Shared - Terraform Output
 
 Callable YAML pipeline to export output values.
+
+### Script
+
+shared_terraform_output.yml
 
 ### Inputs
 
@@ -612,9 +629,13 @@ Callable YAML pipeline to export output values.
 | RECOVERY_SERVICES_VAULT_NAME | Name of the recovery service vault for the backup of the virtual machine. |
 | SUBNET_ID | Id of the subnet used for the private IP address of the virtual machine. |
 
-## module_terraform_apply_main.yml
+## Module - Terraform CI/CD
 
 Main YAML pipeline to deploy a module.
+
+### Script
+
+module_terraform_apply_main.yml
 
 ### Inputs
 
@@ -626,9 +647,13 @@ Main YAML pipeline to deploy a module.
 | CLIENT_IP | string | true | 94.134.104.161 | Client IP |
 | INITIAL | string | true | no | Initial Deployment (yes or no). | 
 
-## module_terraform_apply.yml
+## Module - Terraform Apply
 
 Callable YAML pipline to deploy a module.
+
+## Script
+
+module_terraform_apply.yml
 
 ### Inputs
 
