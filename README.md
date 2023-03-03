@@ -4,6 +4,7 @@
 
 * [Introduction](#introduction)
 * [Pre-Requirements](#pre-requirements)
+* [Azure Infrastructure](#azure-infrastructure)
 * [Modules](#modules)
   * [Shared](#shared)
   * [Linux Virtual Machine](#linux-virtual-machine)
@@ -18,6 +19,10 @@
 ## Introduction
 
 This is a collection of Terraform scripts that show how to create Azure resources.
+
+## Azure Infrastructure
+
+![Azure Infrastructure GitHub Actions Runner](./doc/images/AzureInfrastructureGitHubActionsRunner.png)
 
 ## Pre-Requirements
 

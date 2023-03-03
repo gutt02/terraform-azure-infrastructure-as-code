@@ -37,3 +37,6 @@ override.tf.json
 
 # Local .local. files
 **/*.local.*
+
+# Backups
+*.bkp
