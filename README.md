@@ -136,12 +136,12 @@ variable "virtual_network" {
   })
 
   default = {
-    address_space = "192.168.255.0/27"
+    address_space = "192.168.2.0/24"
 
     subnets = {
       virtual_machine = {
         name          = "virtual-machine"
-        address_space = "192.168.255.0/28"
+        address_space = "192.168.2.0/28"
       }
     }
   }
